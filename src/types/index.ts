@@ -77,6 +77,7 @@ export interface IDivisionCalculationResult {
   divisionAverageScore: number;
   divisionRiskLevel: string;
   entryResults: {
+    riskLevelShort: string;
     entryId: string;
     climateHazardCategory: string;
     criteriaResults: {

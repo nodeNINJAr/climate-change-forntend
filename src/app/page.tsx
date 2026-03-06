@@ -73,6 +73,20 @@ export default function App() {
     }
   };
 
+  // NEW: Handle division change in the form
+  const handleDivisionChange = (newDivision: string) => {
+    setDivision(newDivision as typeof division);
+    // Clear selected entry if it's from a different division
+    if (selectedEntryId) {
+      const selectedEntry = entries.find(e => e._id === selectedEntryId);
+      if (selectedEntry && selectedEntry.division !== newDivision) {
+        setSelectedEntryId('');
+        setCriteria([]);
+        setDivisionCalculation(null);
+      }
+    }
+  };
+
   const handleCreateOrUpdateEntry = async () => {
     if (!division || !climateHazardCategory) return alert('Division and Hazard Category are required');
     setLoading(true);
@@ -160,7 +174,6 @@ export default function App() {
     }
   };
 
-  // Calculate for the division of the selected entry
   const handleCalculateDivision = async () => {
     if (!selectedEntryId) {
       alert('Select an entry first');
@@ -215,18 +228,12 @@ export default function App() {
     }
   };
 
-  // Get entries for the selected division (for main page list)
+  // UPDATED: Filter entries by the selected division (from form dropdown)
   const getFilteredEntries = () => {
-    if (!selectedEntryId) return entries;
-    
-    const selectedEntry = entries.find(e => e._id === selectedEntryId);
-    if (!selectedEntry) return entries;
-    
-    // Filter entries by the division of the selected entry
-    return entries.filter(e => e.division === selectedEntry.division);
+    // Filter by the division dropdown value
+    return entries.filter(e => e.division === division);
   };
 
-  // Get entries for selected division in division view
   const getEntriesForDivisionView = () => {
     if (!selectedDivisionView) return [];
     return entries.filter(e => e.division === selectedDivisionView);
@@ -263,7 +270,7 @@ export default function App() {
                   <select
                     className="border p-2 rounded w-full bg-white font-semibold"
                     value={division}
-                    onChange={e => setDivision(e.target.value as typeof division)}
+                    onChange={e => handleDivisionChange(e.target.value)}
                   >
                     {BD_DIVISIONS.map(div => (
                       <option key={div} value={div}>{div}</option>
@@ -305,7 +312,7 @@ export default function App() {
 
             <div className="bg-white p-6 rounded-lg shadow-sm border">
               <h2 className="text-xl font-bold mb-4 text-gray-700">
-                {selectedEntryId ? `${entries.find(e => e._id === selectedEntryId)?.division} Entries` : 'All Entries'}
+                {division} Entries
               </h2>
               <div className="max-h-96 overflow-y-auto space-y-2">
                 {getFilteredEntries().length > 0 ? (
@@ -341,14 +348,14 @@ export default function App() {
                   ))
                 ) : (
                   <p className="text-gray-400 italic text-center py-4">
-                    {selectedEntryId ? 'No other entries in this division' : 'No entries yet.'}
+                    No entries in {division}
                   </p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Column: Criteria & Results */}
+          {/* Right Column: Criteria & Results - KEEP EXISTING CODE */}
           <div className="lg:col-span-2 space-y-6">
             {!selectedEntryId ? (
               <div className="bg-white p-12 rounded-lg shadow-sm border text-center">
@@ -461,118 +468,153 @@ export default function App() {
                   </button>
                 </div>
 
-                {divisionCalculation && (
-                  <div className="bg-white p-8 rounded-lg shadow-lg border-2 border-green-500">
-                    <h2 className="text-3xl font-bold mb-6 text-gray-800">
-                      {divisionCalculation.division} Division Assessment
-                    </h2>
-                    
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                      <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 text-center">
-                        <p className="text-sm text-blue-600 uppercase font-semibold mb-2">Total Entries</p>
-                        <p className="text-4xl font-bold text-blue-800">{divisionCalculation.entryCount}</p>
+                   {divisionCalculation && (
+                    <div className="bg-white p-8 rounded-lg shadow-lg border-2 border-green-500">
+                      <h2 className="text-3xl font-bold mb-6 text-gray-800">
+                        {divisionCalculation.division} Division Assessment
+                      </h2>
+                      
+                      {/* Summary Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 text-center">
+                          <p className="text-sm text-blue-600 uppercase font-semibold mb-2">Total Entries</p>
+                          <p className="text-4xl font-bold text-blue-800">{divisionCalculation.entryCount}</p>
+                        </div>
+                        <div className="bg-purple-50 p-6 rounded-lg border border-purple-200 text-center">
+                          <p className="text-sm text-purple-600 uppercase font-semibold mb-2">Total Criteria</p>
+                          <p className="text-4xl font-bold text-purple-800">{divisionCalculation.totalCriteriaCount}</p>
+                        </div>
+                        <div className="bg-orange-50 p-6 rounded-lg border border-orange-200 text-center">
+                          <p className="text-sm text-orange-600 uppercase font-semibold mb-2">Sum of Values</p>
+                          <p className="text-4xl font-bold text-orange-800">{divisionCalculation.sumOfAllCriteriaValues.toFixed(2)}</p>
+                        </div>
+                        <div className="bg-green-50 p-6 rounded-lg border border-green-200 text-center">
+                          <p className="text-sm text-green-600 uppercase font-semibold mb-2">Average Score</p>
+                          <p className="text-4xl font-bold text-green-800">{divisionCalculation.divisionAverageScore.toFixed(2)}</p>
+                        </div>
                       </div>
-                      <div className="bg-purple-50 p-6 rounded-lg border border-purple-200 text-center">
-                        <p className="text-sm text-purple-600 uppercase font-semibold mb-2">Total Criteria</p>
-                        <p className="text-4xl font-bold text-purple-800">{divisionCalculation.totalCriteriaCount}</p>
-                      </div>
-                      <div className="bg-orange-50 p-6 rounded-lg border border-orange-200 text-center">
-                        <p className="text-sm text-orange-600 uppercase font-semibold mb-2">Sum of Values</p>
-                        <p className="text-4xl font-bold text-orange-800">{divisionCalculation.sumOfAllCriteriaValues.toFixed(2)}</p>
-                      </div>
-                      <div className="bg-green-50 p-6 rounded-lg border border-green-200 text-center">
-                        <p className="text-sm text-green-600 uppercase font-semibold mb-2">Average Score</p>
-                        <p className="text-4xl font-bold text-green-800">{divisionCalculation.divisionAverageScore.toFixed(2)}</p>
-                      </div>
-                    </div>
 
-                    {/* Formula Breakdown */}
-                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 mb-8 rounded">
-                      <h3 className="font-bold text-yellow-800 mb-3 text-lg">📊 Calculation Formula</h3>
-                      <div className="space-y-2 text-gray-700">
-                        <p><strong>Sum of All Criteria Values:</strong> {divisionCalculation.sumOfAllCriteriaValues.toFixed(2)}</p>
-                        <p><strong>Total Criteria Count:</strong> {divisionCalculation.totalCriteriaCount}</p>
-                        <p className="text-lg font-bold text-yellow-900 mt-3">
-                          Average Score = {divisionCalculation.sumOfAllCriteriaValues.toFixed(2)} ÷ {divisionCalculation.totalCriteriaCount} = {divisionCalculation.divisionAverageScore.toFixed(2)}
-                        </p>
+                      {/* Formula Breakdown */}
+                      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 mb-8 rounded">
+                        <h3 className="font-bold text-yellow-800 mb-3 text-lg">📊 Calculation Formula</h3>
+                        <div className="space-y-2 text-gray-700">
+                          <p><strong>Sum of All Criteria Values:</strong> {divisionCalculation.sumOfAllCriteriaValues.toFixed(2)}</p>
+                          <p><strong>Total Criteria Count:</strong> {divisionCalculation.totalCriteriaCount}</p>
+                          <p className="text-lg font-bold text-yellow-900 mt-3 bg-white p-3 rounded">
+                            Average Score = ({divisionCalculation.sumOfAllCriteriaValues.toFixed(2)} ÷ {divisionCalculation.totalCriteriaCount}) × 3 = {divisionCalculation.divisionAverageScore.toFixed(2)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Entry Details */}
-                    <div className="mb-8">
-                      <h3 className="text-xl font-bold mb-4 text-gray-800 border-b-2 border-blue-500 pb-2">
-                        Entry Breakdown ({divisionCalculation.entryResults.length} Entries)
-                      </h3>
-                      <div className="space-y-4">
-                        {divisionCalculation.entryResults.map(entry => (
-                          <div key={entry.entryId} className="border-2 border-gray-200 rounded-lg p-5 hover:border-blue-300 transition-colors">
-                            <div className="flex justify-between items-center mb-3">
-                              <h4 className="text-lg font-bold text-gray-800">{entry.climateHazardCategory}</h4>
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                entry.riskLevel.includes('High') ? 'bg-red-500 text-white' :
-                                entry.riskLevel.includes('Moderate') ? 'bg-yellow-500 text-white' :
-                                entry.riskLevel === 'No Data' ? 'bg-gray-400 text-white' : 'bg-green-500 text-white'
-                              }`}>
-                                {entry.riskLevel}
-                              </span>
-                            </div>
-                            
-                            {entry.criteriaResults.length > 0 ? (
-                              <>
-                                <div className="overflow-x-auto mb-3">
-                                  <table className="w-full text-sm">
-                                    <thead className="bg-gray-100">
-                                      <tr>
-                                        <th className="text-left p-2 border">Criteria</th>
-                                        <th className="text-left p-2 border">Damage Level</th>
-                                        <th className="text-center p-2 border">Score</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {entry.criteriaResults.map((cr, idx) => (
-                                        <tr key={idx} className="hover:bg-gray-50">
-                                          <td className="p-2 border">{cr.criteriaTitle}</td>
-                                          <td className="p-2 border">{cr.selectedConfig}</td>
-                                          <td className="p-2 border text-center font-semibold">{cr.configValue}</td>
+                      {/* Entry Details */}
+                      <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4 text-gray-800 border-b-2 border-blue-500 pb-2">
+                          Entry Breakdown ({divisionCalculation.entryResults.length} Entries)
+                        </h3>
+                        <div className="space-y-4">
+                          {divisionCalculation.entryResults.map(entry => (
+                            <div key={entry.entryId} className="border-2 border-gray-200 rounded-lg p-5 hover:border-blue-300 transition-colors">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-lg font-bold text-gray-800">{entry.climateHazardCategory}</h4>
+                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                  entry.riskLevelShort === 'Totally resilient' ? 'bg-green-600 text-white' :
+                                  entry.riskLevelShort === 'Resilient' ? 'bg-blue-500 text-white' :
+                                  entry.riskLevelShort === 'Slightly resilient' ? 'bg-yellow-500 text-white' :
+                                  entry.riskLevelShort === 'Not resilient' ? 'bg-red-500 text-white' : 'bg-gray-400 text-white'
+                                }`}>
+                                  {entry.riskLevelShort || 'No Data'}
+                                </span>
+                              </div>
+                              
+                              {entry.criteriaResults.length > 0 ? (
+                                <>
+                                  <div className="overflow-x-auto mb-3">
+                                    <table className="w-full text-sm">
+                                      <thead className="bg-gray-100">
+                                        <tr>
+                                          <th className="text-left p-2 border">Criteria</th>
+                                          <th className="text-left p-2 border">Resilience Level</th>
+                                          <th className="text-center p-2 border">Points</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                                <div className="flex justify-between text-sm bg-gray-50 p-3 rounded">
-                                  <span><strong>Entry Total:</strong> {entry.totalScore.toFixed(2)}</span>
-                                  <span><strong>Entry Average:</strong> {entry.averageScore.toFixed(2)}</span>
-                                  <span><strong>Criteria Count:</strong> {entry.criteriaCount}</span>
-                                </div>
-                              </>
-                            ) : (
-                              <p className="text-gray-400 italic text-sm">No criteria data available</p>
-                            )}
-                          </div>
-                        ))}
+                                      </thead>
+                                      <tbody>
+                                        {entry.criteriaResults.map((cr, idx) => (
+                                          <tr key={idx} className="hover:bg-gray-50">
+                                            <td className="p-2 border">{cr.criteriaTitle}</td>
+                                            <td className="p-2 border">{cr.selectedConfig}</td>
+                                            <td className="p-2 border text-center font-semibold">{cr.configValue}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                  <div className="flex justify-between text-sm bg-gray-50 p-3 rounded mb-3">
+                                    <span><strong>Entry Total:</strong> {entry.totalScore.toFixed(2)}</span>
+                                    <span><strong>Entry Average:</strong> {entry.averageScore.toFixed(2)}</span>
+                                    <span><strong>Criteria Count:</strong> {entry.criteriaCount}</span>
+                                  </div>
+                                  
+                                  {/* Full Description for Entry */}
+                                  <div className={`p-4 rounded-lg border-l-4 text-sm leading-relaxed ${
+                                    entry.riskLevelShort === 'Totally resilient' ? 'bg-green-50 border-green-500 text-green-900' :
+                                    entry.riskLevelShort === 'Resilient' ? 'bg-blue-50 border-blue-500 text-blue-900' :
+                                    entry.riskLevelShort === 'Slightly resilient' ? 'bg-yellow-50 border-yellow-500 text-yellow-900' :
+                                    'bg-red-50 border-red-500 text-red-900'
+                                  }`}>
+                                    <strong className="block mb-1">Assessment:</strong>
+                                    {entry.riskLevel || 'No data available'}
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="text-gray-400 italic text-sm">No criteria data available</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Final Result */}
-                    <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-500 rounded-lg p-8 text-center">
-                      <h3 className="text-2xl font-bold text-gray-800 mb-4">Division-Wide Risk Level</h3>
-                      <div className={`text-5xl font-black mb-6 ${
-                        divisionCalculation.divisionRiskLevel.includes('High') ? 'text-red-600' :
-                        divisionCalculation.divisionRiskLevel.includes('Moderate') ? 'text-yellow-600' : 'text-green-600'
-                      }`}>
-                        {divisionCalculation.divisionRiskLevel}
+                      {/* Final Result */}
+                      <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-500 rounded-lg p-8 text-center">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Division-Wide Resilience Assessment</h3>
+                        
+                        {/* Short Badge */}
+                        <div className={`text-5xl font-black mb-6 ${
+                          divisionCalculation.divisionRiskLevel === 'Totally resilient' ? 'text-green-600' :
+                          divisionCalculation.divisionRiskLevel === 'Resilient' ? 'text-blue-600' :
+                          divisionCalculation.divisionRiskLevel === 'Slightly resilient' ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                          {divisionCalculation.divisionRiskLevel || 'No Data'}
+                        </div>
+                        
+                        {/* Full Description */}
+                        <div className={`p-6 rounded-lg border-2 text-left mb-6 ${
+                          divisionCalculation.divisionRiskLevel === 'Totally resilient' ? 'bg-green-50 border-green-500' :
+                          divisionCalculation.divisionRiskLevel === 'Resilient' ? 'bg-blue-50 border-blue-500' :
+                          divisionCalculation.divisionRiskLevel === 'Slightly resilient' ? 'bg-yellow-50 border-yellow-500' :
+                          'bg-red-50 border-red-500'
+                        }`}>
+                          <p className={`leading-relaxed ${
+                            divisionCalculation.divisionRiskLevel === 'Totally resilient' ? 'text-green-900' :
+                            divisionCalculation.divisionRiskLevel === 'Resilient' ? 'text-blue-900' :
+                            divisionCalculation.divisionRiskLevel === 'Slightly resilient' ? 'text-yellow-900' :
+                            'text-red-900'
+                          }`}>
+                            <strong className="block mb-2 text-lg">Overall Assessment:</strong>
+                            {divisionCalculation.divisionRiskLevel || 'No data available'}
+                          </p>
+                        </div>
+                        
+                        <button 
+                          onClick={exportDivisionPDF}
+                          disabled={loading}
+                          className="bg-gray-800 text-white px-8 py-3 rounded-lg hover:bg-gray-900 transition-colors text-lg font-semibold shadow-lg disabled:bg-gray-400"
+                        >
+                          {loading ? 'Generating PDF...' : '📥 Download Division PDF Report'}
+                        </button>
                       </div>
-                      <button 
-                        onClick={exportDivisionPDF}
-                        disabled={loading}
-                        className="bg-gray-800 text-white px-8 py-3 rounded-lg hover:bg-gray-900 transition-colors text-lg font-semibold shadow-lg disabled:bg-gray-400"
-                      >
-                        {loading ? 'Generating PDF...' : '📥 Download Division PDF Report'}
-                      </button>
                     </div>
-                  </div>
-                )}
+               )}
+            
               </>
             )}
           </div>
@@ -637,7 +679,7 @@ export default function App() {
             </>
           )}
         </div>
-      )}
+       )}
     </div>
   );
 }
